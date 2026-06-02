@@ -88,7 +88,7 @@ export default function App() {
         muted
         playsInline
         preload="auto"
-        className="absolute inset-0 z-0 h-full w-full object-cover"
+        className="absolute inset-0 z-0 h-full w-full object-cover object-[center_78%] sm:object-center"
         src={videoUrl}
       />
       <Suspense fallback={null}>
