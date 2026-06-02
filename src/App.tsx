@@ -41,6 +41,7 @@ const content = {
 
 const videoUrl =
   'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260314_131748_f2ca2a28-fed7-44c8-b9a9-bd9acdd5ec31.mp4'
+const wechatPosterUrl = '/hero-wechat-poster-v2.jpg?v=20260602'
 
 export default function App() {
   const [lang, setLang] = useState<'zh' | 'en'>('zh')
@@ -95,7 +96,7 @@ export default function App() {
         muted
         playsInline
         preload="auto"
-        poster="/hero-wechat-fallback.jpg"
+        poster={wechatPosterUrl}
         className="absolute inset-0 z-0 h-full w-full object-cover object-[center_78%] sm:object-center"
         src={videoUrl}
         onError={() => setUsePosterFallback(true)}
@@ -103,7 +104,7 @@ export default function App() {
       />
       {usePosterFallback ? (
         <img
-          src="/hero-wechat-fallback.jpg"
+          src={wechatPosterUrl}
           alt=""
           aria-hidden="true"
           className="absolute inset-0 z-0 h-full w-full object-cover object-[center_78%] sm:object-center"
