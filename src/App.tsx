@@ -1,5 +1,5 @@
 import { Globe2, Mail } from 'lucide-react'
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 
 import { Button } from './components/ui/button'
 import { cn } from './lib/utils'
@@ -44,16 +44,50 @@ const videoUrl =
 
 export default function App() {
   const [lang, setLang] = useState<'zh' | 'en'>('zh')
+  const videoRef = useRef<HTMLVideoElement | null>(null)
   const isZh = lang === 'zh'
   const t = content[lang]
+
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) {
+      return
+    }
+
+    video.setAttribute('playsinline', 'true')
+    video.setAttribute('webkit-playsinline', 'true')
+    video.setAttribute('x5-playsinline', 'true')
+    video.setAttribute('x5-video-player-type', 'h5-page')
+    video.setAttribute('x5-video-player-fullscreen', 'false')
+    video.setAttribute('x5-video-orientation', 'portrait')
+
+    const tryPlay = () => {
+      void video.play().catch(() => {
+        // WeChat may delay autoplay permission until bridge events fire.
+      })
+    }
+
+    tryPlay()
+    video.addEventListener('loadeddata', tryPlay)
+    document.addEventListener('WeixinJSBridgeReady', tryPlay as EventListener)
+    document.addEventListener('YixinJSBridgeReady', tryPlay as EventListener)
+
+    return () => {
+      video.removeEventListener('loadeddata', tryPlay)
+      document.removeEventListener('WeixinJSBridgeReady', tryPlay as EventListener)
+      document.removeEventListener('YixinJSBridgeReady', tryPlay as EventListener)
+    }
+  }, [])
 
   return (
     <div className="relative min-h-[100svh] overflow-x-hidden bg-background text-foreground">
       <video
+        ref={videoRef}
         autoPlay
         loop
         muted
         playsInline
+        preload="auto"
         className="absolute inset-0 z-0 h-full w-full object-cover"
         src={videoUrl}
       />
