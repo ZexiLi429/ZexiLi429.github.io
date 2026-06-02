@@ -1,8 +1,14 @@
 import { Globe2, Mail } from 'lucide-react'
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 
 import { Button } from './components/ui/button'
 import { cn } from './lib/utils'
+
+const StarfieldBackground = lazy(() =>
+  import('./components/starfield-background').then((module) => ({
+    default: module.StarfieldBackground,
+  })),
+)
 
 type Language = 'zh' | 'en'
 
@@ -11,7 +17,7 @@ const content = {
     nav: ['首页', '关于', '机器人与AI项目', '音乐创作', '简历'],
     headingStart: '你好呀，我是',
     name: '李泽曦',
-    headingEnd: '。',
+    headingEnd: '',
     subtext:
       '24岁 | 天津大学软件工程 & 布里斯托大学机器人学硕士。专注于 LLM 智能体、机器视觉与全栈开发。在喧嚣中，用代码构建智能，用音乐记录生活。',
     contact: '联系我 / Contact',
@@ -23,7 +29,7 @@ const content = {
     nav: ['Home', 'About', 'Robotics & AI', 'Music', 'Resume'],
     headingStart: 'Hello there, I am',
     name: 'Li Zexi',
-    headingEnd: '.',
+    headingEnd: '',
     subtext:
       '24 y/o | Software Engineering @ TJU & MSc Robotics @ Bristol. Focused on AI Agents, Computer Vision, and Full-Stack dev. Building intelligence through code, capturing life through music.',
     contact: 'Contact',
@@ -42,7 +48,7 @@ export default function App() {
   const t = content[lang]
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
+    <div className="relative min-h-[100svh] overflow-x-hidden bg-background text-foreground">
       <video
         autoPlay
         loop
@@ -51,23 +57,41 @@ export default function App() {
         className="absolute inset-0 z-0 h-full w-full object-cover"
         src={videoUrl}
       />
+      <Suspense fallback={null}>
+        <StarfieldBackground />
+      </Suspense>
 
-      <div className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_top,rgba(103,188,255,0.14),transparent_32%),linear-gradient(180deg,rgba(2,6,23,0.18),rgba(2,6,23,0.72))]" />
-      <div className="absolute inset-x-0 top-[-20%] z-0 mx-auto h-[30rem] w-[30rem] rounded-full bg-[rgba(125,211,252,0.10)] blur-3xl animate-drift" />
+      <div className="absolute inset-0 z-[2] bg-[radial-gradient(ellipse_at_50%_-8%,rgba(196,232,255,0.14),transparent_34%),radial-gradient(ellipse_at_18%_10%,rgba(84,209,214,0.12),transparent_26%),radial-gradient(ellipse_at_82%_16%,rgba(160,214,255,0.1),transparent_24%),linear-gradient(180deg,rgba(2,6,23,0.14),rgba(2,6,23,0.54)_58%,rgba(2,6,23,0.36))]" />
 
-      <div className="relative z-10 flex min-h-screen flex-col">
-        <header className="relative z-10 mx-auto flex w-full max-w-7xl items-center justify-between px-8 py-6">
-          <a
-            href="https://github.com/ZexiLi429"
-            target="_blank"
-            rel="noreferrer"
-            className={cn(
-              'text-3xl tracking-tight text-foreground',
-              isZh ? 'font-displayZh' : 'font-displayEn',
-            )}
-          >
-            Zexi<sup className="text-xs">®</sup>
-          </a>
+      <div className="relative z-10 flex min-h-[100svh] flex-col">
+        <header className="relative z-10 mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-4 px-4 pb-4 pt-5 sm:px-6 md:flex-nowrap md:px-8 md:py-6">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+            <a
+              href="https://github.com/ZexiLi429"
+              target="_blank"
+              rel="noreferrer"
+              className={cn(
+                'text-2xl tracking-tight text-foreground sm:text-3xl',
+                isZh ? 'font-displayZh' : 'font-displayEn',
+              )}
+            >
+              Zexi<sup className="text-xs">®</sup>
+            </a>
+
+            <nav className="flex min-w-0 items-center gap-3 overflow-x-auto whitespace-nowrap md:hidden [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
+              {t.nav.map((item) => (
+                <a
+                  key={`${item}-mobile-inline`}
+                  href="https://github.com/ZexiLi429"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="shrink-0 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  {item}
+                </a>
+              ))}
+            </nav>
+          </div>
 
           <nav className="hidden items-center gap-8 md:flex">
             {t.nav.map((item) => (
@@ -83,47 +107,48 @@ export default function App() {
             ))}
           </nav>
 
-          <div className="flex items-center gap-3">
+          <div className="flex w-full items-center justify-end gap-2 sm:w-auto sm:gap-3 md:order-none">
             <Button
               variant="glass"
               size="sm"
               type="button"
               onClick={() => setLang((current) => (current === 'zh' ? 'en' : 'zh'))}
               aria-label="Toggle language"
+              className="shrink-0 px-3 py-1.5 text-xs text-white/95 shadow-[inset_0_1px_0_rgba(255,255,255,0.24),0_10px_28px_rgba(15,23,42,0.2)] backdrop-blur-xl sm:px-4 sm:py-1.5 sm:text-sm"
             >
-              <Globe2 className="mr-2 h-4 w-4" />
+              <Globe2 className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
               {t.toggle}
             </Button>
 
-            <Button variant="glass" asChild>
-              <a href="mailto:76321278@qq.com">{content.zh.contact}</a>
+            <Button variant="glass" asChild className="min-w-0 px-3.5 py-1.5 text-xs text-white/95 shadow-[inset_0_1px_0_rgba(255,255,255,0.24),0_10px_28px_rgba(15,23,42,0.2)] backdrop-blur-xl sm:px-6 sm:py-2.5 sm:text-sm">
+              <a href="mailto:76321278@qq.com">{t.contact}</a>
             </Button>
           </div>
         </header>
 
-        <main className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 pb-40 pt-32 py-[90px] text-center">
-          <div className="liquid-glass animate-rise rounded-full px-5 py-2 text-xs uppercase tracking-[0.28em] text-muted-foreground">
+        <main className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-start px-4 pb-14 pt-14 text-center sm:justify-center sm:px-6 sm:pb-20 sm:pt-14 md:px-8 md:pb-24 md:pt-16">
+          <div className="liquid-glass animate-rise rounded-full px-4 py-2 text-[10px] uppercase tracking-[0.16em] text-muted-foreground sm:px-5 sm:text-xs sm:tracking-[0.24em]">
             {t.badge}
           </div>
 
           <h1
             className={cn(
-              'mt-10 max-w-7xl text-5xl font-normal leading-[0.95] tracking-tight text-foreground sm:text-7xl md:text-8xl animate-rise [animation-delay:120ms]',
+              'mt-7 max-w-[13ch] text-[clamp(2.6rem,9vw,7rem)] font-normal leading-[0.92] tracking-[-0.04em] text-foreground animate-rise [animation-delay:120ms] sm:mt-10 md:max-w-[14ch]',
               isZh ? 'font-displayZh' : 'font-displayEn',
             )}
           >
-            {t.headingStart}{' '}
-            <em className="not-italic text-muted-foreground">{t.name}</em>
-            {t.headingEnd}
+            <span className="block">{t.headingStart}</span>
+            <em className="mt-2 block not-italic text-muted-foreground sm:mt-3">{t.name}</em>
+            <span className="block">{t.headingEnd}</span>
           </h1>
 
-          <p className="mt-8 max-w-2xl animate-rise text-base leading-relaxed text-muted-foreground [animation-delay:240ms] sm:text-lg">
+          <p className="mt-6 max-w-[42rem] animate-rise text-sm leading-7 text-muted-foreground [animation-delay:240ms] sm:mt-8 sm:text-base md:text-lg">
             {t.subtext}
           </p>
 
-          <div className="mt-12 flex animate-rise flex-col items-center gap-4 [animation-delay:360ms] sm:flex-row">
-            <Button variant="glass" size="lg" asChild>
-              <a href="mailto:76321278@qq.com">
+          <div className="mt-10 flex w-full animate-rise flex-col items-center gap-4 [animation-delay:360ms] sm:mt-12 sm:w-auto sm:flex-row">
+            <Button variant="glass" size="lg" asChild className="w-full max-w-sm px-8 py-4 text-sm sm:w-auto sm:max-w-none sm:px-14 sm:py-5 sm:text-base">
+              <a href="mailto:76321278@qq.com" className="justify-center">
                 <Mail className="mr-2 h-4 w-4" />
                 {t.heroCta}
               </a>
