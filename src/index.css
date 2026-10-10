@@ -154,7 +154,7 @@ body { overflow-x: clip; }
 .hero-sticky { position: sticky; top: 0; height: 100svh; }
 .hero-sticky > header { opacity: calc(1 - var(--studio-progress)); }
 .studio-entered .hero-sticky > header { visibility: hidden; }
-.original-intro { transform: translateX(calc(var(--studio-progress) * 24vw)) scale(calc(1 - var(--studio-progress) * .36)); transform-origin: center; }
+.original-intro { transform: translateX(calc(var(--studio-progress) * 18vw)) scale(calc(1 - var(--studio-progress) * .36)); transform-origin: center; }
 .studio-entered .original-intro { --foreground: 140 14% 23%; --muted-foreground: 140 8% 36%; }
 .studio-entered .original-intro .liquid-glass { background: #faf8edb3; border-color: #cbd3c2; box-shadow: none; }
 .studio-entered .original-intro a { background: #f8f5e7cc; border-color: #a8b89d; color: #344938; box-shadow: none; }
