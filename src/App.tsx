@@ -47,9 +47,20 @@ const wechatPosterUrl = '/hero-wechat-poster-v2.jpg?v=20260602'
 export default function App() {
   const [lang, setLang] = useState<'zh' | 'en'>('zh')
   const [usePosterFallback, setUsePosterFallback] = useState(false)
+  const [deferVideo,setDeferVideo]=useState(()=>innerWidth<760)
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const isZh = lang === 'zh'
   const t = content[lang]
+
+  useEffect(()=>{
+    if(!deferVideo)return
+    let complete=false
+    const reveal=()=>{if(complete&&scrollY<innerHeight*.2)setDeferVideo(false)}
+    const ready=()=>{complete=true;reveal()}
+    addEventListener('studio-model-complete',ready)
+    addEventListener('scroll',reveal,{passive:true})
+    return()=>{removeEventListener('studio-model-complete',ready);removeEventListener('scroll',reveal)}
+  },[deferVideo])
 
   useEffect(() => {
     const isWeChat = /MicroMessenger/i.test(window.navigator.userAgent)
@@ -97,10 +108,10 @@ export default function App() {
         loop
         muted
         playsInline
-        preload="auto"
+        preload={deferVideo?'none':'metadata'}
         poster={wechatPosterUrl}
         className="absolute inset-0 z-0 h-full w-full object-cover object-[center_78%] sm:object-center"
-        src={videoUrl}
+        src={deferVideo||usePosterFallback?undefined:videoUrl}
         onError={() => setUsePosterFallback(true)}
         style={{ opacity: usePosterFallback ? 0 : 1 }}
       />

@@ -13,13 +13,18 @@ export function StudioExperience({ lang, onToggleLanguage }: { lang: 'zh' | 'en'
   const zh = lang === 'zh'
   const dailyDesk = useDailyDesk()
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [loadProgress,setLoadProgress]=useState(0)
+  const reportProgress=useCallback((value:number)=>setLoadProgress(value),[])
   const [reduced, setReduced] = useState(() => matchMedia('(prefers-reduced-motion: reduce)').matches)
   const [active, setActive] = useState('home')
   const [entered, setEntered] = useState(false)
   const [selection, setSelection] = useState<number | null>(exhibitFromUrl)
   const historyOwned=useRef(false)
   const dialog = useRef<HTMLDialogElement>(null)
-  const reportStatus = useCallback((value: 'loading' | 'ready' | 'error') => setStatus(value), [])
+  const reportStatus = useCallback((value: 'loading' | 'ready' | 'error') => {
+    setStatus(value)
+    if(value!=='loading')dispatchEvent(new Event('studio-model-complete'))
+  }, [])
   const openExhibit=useCallback((index:number)=>{
     const url=new URL(location.href),alreadyOpen=url.searchParams.has('exhibit');url.searchParams.set('exhibit',fields[index].id)
     if(alreadyOpen)history.replaceState(history.state,'',url)
@@ -84,7 +89,7 @@ export function StudioExperience({ lang, onToggleLanguage }: { lang: 'zh' | 'en'
   return <>
     <a className="skip-link" href="#about">{zh ? '跳到正文' : 'Skip to content'}</a>
     <div className={`studio-layer ${status === 'error' ? 'studio-fallback' : ''}`} data-model-status={status}>
-      <Suspense fallback={null}><Scene onStatus={reportStatus} reduced={reduced} selectedFocus={selection} lang={lang} onOpenExhibit={openExhibit} dailyDesk={dailyDesk} /></Suspense>
+      <Suspense fallback={null}><Scene onStatus={reportStatus} onProgress={reportProgress} reduced={reduced} selectedFocus={selection} lang={lang} onOpenExhibit={openExhibit} dailyDesk={dailyDesk} /></Suspense>
       <div className="studio-vignette" />
     </div>
     {entered && <header className="studio-nav">
@@ -93,7 +98,7 @@ export function StudioExperience({ lang, onToggleLanguage }: { lang: 'zh' | 'en'
       <button className="studio-language" onClick={onToggleLanguage} aria-label={zh ? 'Switch to English' : '切换为中文'}>{zh ? 'EN' : '中文'}</button>
       <a className="nav-contact" href="mailto:76321278@qq.com"><Mail size={16} /><span>{zh ? '联系我' : 'Contact'}</span></a>
     </header>}
-    <div className="studio-status" role="status">{entered && status !== 'ready' ? status === 'loading' ? (zh ? '人物正在赶来，内容可以先看' : 'Loading the character. Keep exploring.') : (zh ? '3D 暂时未能加载，仍可阅读全部内容' : '3D unavailable. All content remains accessible.') : null}</div>
+    <div className="studio-status" role="status">{entered && status !== 'ready' ? status === 'loading' ? (zh ? `人物准备中 ${loadProgress>0?`${loadProgress}%`:''} · 内容可以先看` : `Preparing your host ${loadProgress>0?`${loadProgress}%`:''} · Keep exploring.`) : (zh ? '3D 暂时未能加载，仍可阅读全部内容' : '3D unavailable. All content remains accessible.') : null}</div>
     <main className="studio-story">
       <section className="story-section align-left" id="about" tabIndex={-1} aria-labelledby="about-title">
         <div className="story-card">

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js'
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
@@ -12,13 +13,13 @@ import { exhibits } from '../lib/exhibits'
 import { DAILY_URL, drawDailyDesk, type DeskState } from '../lib/daily-desk'
 import { createStudioDog, createDogStep, createDogDishes, type DogPreview } from '../lib/studio-dog'
 
-type Props = { onStatus: (status: 'loading' | 'ready' | 'error') => void; reduced: boolean; selectedFocus: number | null; lang: 'zh' | 'en'; onOpenExhibit: (index: number) => void; dailyDesk: DeskState }
+type Props = { onStatus: (status: 'loading' | 'ready' | 'error') => void; onProgress: (value:number)=>void; reduced: boolean; selectedFocus: number | null; lang: 'zh' | 'en'; onOpenExhibit: (index: number) => void; dailyDesk: DeskState }
 type V = [number, number, number]
 type Shot = { c: V; t: V; fov: number; turn: number; seat: number; arc?: V }
 type Key = { y: number; shot: Shot }
 const ease = (x: number) => { const t = THREE.MathUtils.clamp(x, 0, 1); return t * t * t * (t * (t * 6 - 15) + 10) }
 
-export function StudioScene({ onStatus, reduced, selectedFocus, lang, onOpenExhibit, dailyDesk }: Props) {
+export function StudioScene({ onStatus, onProgress, reduced, selectedFocus, lang, onOpenExhibit, dailyDesk }: Props) {
   const host = useRef<HTMLDivElement>(null), selection = useRef(selectedFocus)
   const hotspots = useRef<HTMLDivElement>(null)
   const pickExhibit = useRef<((x:number,y:number)=>number|null) | null>(null)
@@ -170,13 +171,14 @@ export function StudioScene({ onStatus, reduced, selectedFocus, lang, onOpenExhi
     const microEnabled=new URLSearchParams(location.search).get('eyes')!=='off'
     const disposeObject = (root: THREE.Object3D) => root.traverse(object => { if (object instanceof THREE.Mesh || object instanceof THREE.Line) { object.geometry.dispose(); for (const material of Array.isArray(object.material) ? object.material : [object.material]) { for (const value of Object.values(material)) if (value instanceof THREE.Texture) value.dispose(); material.dispose() } } })
     onStatus('loading')
-    new GLTFLoader().load(`${import.meta.env.BASE_URL}models/scholar-head.glb`, gltf => {
+    const modelFile=innerWidth<760?'scholar-mobile-v1.glb':'scholar-web-v1.glb'
+    new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).load(`${import.meta.env.BASE_URL}models/${modelFile}`, gltf => {
       if (disposed) { disposeObject(gltf.scene); return }
       const bounds = new THREE.Box3().setFromObject(gltf.scene), size = bounds.getSize(new THREE.Vector3()), center = bounds.getCenter(new THREE.Vector3()), scale = 2.65 / size.y
       gltf.scene.scale.setScalar(scale); gltf.scene.position.set(-center.x * scale, -bounds.min.y * scale, -center.z * scale)
       gltf.scene.traverse(object => { if (object instanceof THREE.Mesh) { object.castShadow = true; object.receiveShadow = true; for (const material of Array.isArray(object.material) ? object.material : [object.material]) { material.clippingPlanes = [waist]; material.clipShadows = true; if (material instanceof THREE.MeshStandardMaterial) material.normalScale.set(.55, .55) } } })
       character.add(gltf.scene); headLook=createCharacterHead(gltf.scene); microGaze=createSurfaceGaze(gltf.scene,microEnabled); loaded = true; dirty = true; onStatus('ready')
-    }, undefined, () => { if (!disposed) onStatus('error') })
+    }, event=>{if(!disposed&&event.total>0)onProgress(Math.min(99,Math.round(event.loaded/event.total*100)))}, () => { if (!disposed) onStatus('error') })
     // Opening: upper-left portrait -> centred face close-up -> desk relationship.
     // Chapter transitions have zero velocity and acceleration at both ends.
     const shots: Shot[] = [
