@@ -97,7 +97,7 @@ export function StudioExperience({ lang, onToggleLanguage }: { lang: 'zh' | 'en'
       <div className="studio-vignette" />
     </div>
     {entered && <header className="studio-nav">
-      <a className="studio-brand" href="#home">Zexi<sup>®</sup></a>
+      <a className="studio-brand" href="#home">zexi<sup>®</sup></a>
       <nav aria-label={zh ? '章节导航' : 'Chapter navigation'}>{ids.map((id, i) => <a key={id} href={`#${id}`} aria-current={active === id ? 'location' : undefined}>{labels[i]}</a>)}</nav>
       <button className="studio-language" onClick={onToggleLanguage} aria-label={zh ? 'Switch to English' : '切换为中文'}>{zh ? 'EN' : '中文'}</button>
       <a className="nav-contact" href="mailto:76321278@qq.com"><Mail size={16} /><span>{zh ? '联系我' : 'Contact'}</span></a>

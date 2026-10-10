@@ -17,7 +17,7 @@ const content = {
   zh: {
     nav: ['首页', '关于', '机器人与AI项目', '音乐创作', '简历'],
     headingStart: '你好呀，我是',
-    name: '李泽曦',
+    name: '李恩九',
     headingEnd: '',
     subtext:
       '24岁 | 天津大学软件工程 & 布里斯托大学机器人学硕士。专注于 LLM 智能体、机器视觉与全栈开发。在喧嚣中，用代码构建智能，用音乐记录生活。',
@@ -29,7 +29,7 @@ const content = {
   en: {
     nav: ['Home', 'About', 'Robotics & AI', 'Music', 'Resume'],
     headingStart: 'Hello there, I am',
-    name: 'Li Zexi',
+    name: 'zexi',
     headingEnd: '',
     subtext:
       '24 y/o | Software Engineering @ TJU & MSc Robotics @ Bristol. Focused on AI Agents, Computer Vision, and Full-Stack dev. Building intelligence through code, capturing life through music.',
@@ -45,9 +45,9 @@ const videoUrl =
 const wechatPosterUrl = '/hero-wechat-poster-v2.jpg?v=20260602'
 
 export default function App() {
-  const [lang, setLang] = useState<'zh' | 'en'>('zh')
+  const [lang, setLang] = useState<'zh' | 'en'>('en')
   const [usePosterFallback, setUsePosterFallback] = useState(false)
-  const [deferVideo,setDeferVideo]=useState(()=>innerWidth<760)
+  const [deferVideo,setDeferVideo]=useState(true)
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const isZh = lang === 'zh'
   const t = content[lang]
@@ -141,7 +141,7 @@ export default function App() {
                 isZh ? 'font-displayZh' : 'font-displayEn',
               )}
             >
-              Zexi<sup className="text-xs">®</sup>
+              zexi<sup className="text-xs">®</sup>
             </a>
 
             <nav className="flex min-w-0 items-center gap-3 overflow-x-auto whitespace-nowrap md:hidden [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">

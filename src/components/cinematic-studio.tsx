@@ -41,14 +41,14 @@ export function StudioScene({ onStatus, onProgress, reduced, selectedFocus, lang
     if (!host.current) return
     const container = host.current
     const compact=innerWidth<760
-    let renderRatio=Math.min(devicePixelRatio,compact?1:1.5),slowFrames=0,drawFrames=0
+    let renderRatio=Math.min(devicePixelRatio,compact?1:1.25),slowFrames=0,drawFrames=0
     let renderer: THREE.WebGLRenderer
     try { renderer = new THREE.WebGLRenderer({ antialias: !compact, powerPreference: 'high-performance' }) }
     catch { onStatus('error'); return }
     renderer.setPixelRatio(renderRatio)
     renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05
     renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap; renderer.localClippingEnabled = true
-    renderer.shadowMap.autoUpdate=!compact
+    renderer.shadowMap.autoUpdate=false
     container.appendChild(renderer.domElement)
     const scene = new THREE.Scene(); scene.background = new THREE.Color('#0c1929'); scene.fog = new THREE.Fog('#0c1929', 11, 24)
     const camera = new THREE.PerspectiveCamera(38, 1, .08, 40)
@@ -175,7 +175,7 @@ export function StudioScene({ onStatus, onProgress, reduced, selectedFocus, lang
     const microEnabled=new URLSearchParams(location.search).get('eyes')!=='off'
     const disposeObject = (root: THREE.Object3D) => root.traverse(object => { if (object instanceof THREE.Mesh || object instanceof THREE.Line) { object.geometry.dispose(); for (const material of Array.isArray(object.material) ? object.material : [object.material]) { for (const value of Object.values(material)) if (value instanceof THREE.Texture) value.dispose(); material.dispose() } } })
     onStatus('loading')
-    const modelFile=innerWidth<760?'scholar-mobile-v1.glb':'scholar-web-v1.glb'
+    const modelFile=innerWidth<760?'scholar-mobile-v1.glb':'scholar-web-v2.glb'
     new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).load(`${import.meta.env.BASE_URL}models/${modelFile}`, gltf => {
       if (disposed) { disposeObject(gltf.scene); return }
       const bounds = new THREE.Box3().setFromObject(gltf.scene), size = bounds.getSize(new THREE.Vector3()), center = bounds.getCenter(new THREE.Vector3()), scale = 2.65 / size.y
@@ -197,7 +197,8 @@ export function StudioScene({ onStatus, onProgress, reduced, selectedFocus, lang
       { c: [2.8, 1.95, 3.5], t: [.65, 1.55, -.25], fov: 38, turn: .10, seat: -.48, arc: [.25, .35, -.5] },
     ]
     let keys: Key[] = []
-    const composer=compact?null:new EffectComposer(renderer,new THREE.WebGLRenderTarget(innerWidth,innerHeight,{type:THREE.HalfFloatType,samples:4}))
+    const composer=compact?null:new EffectComposer(renderer,new THREE.WebGLRenderTarget(innerWidth,innerHeight,{type:THREE.HalfFloatType,samples:2}))
+    composer?.setPixelRatio(renderRatio*.85)
     const bokeh=compact?null:new BokehPass(scene,camera,{focus:4,aperture:.0011,maxblur:.008})
     if(composer&&bokeh){composer.addPass(new RenderPass(scene,camera));composer.addPass(bokeh);composer.addPass(new OutputPass())}
     const uniforms = bokeh?.uniforms as Record<string, { value: number }> | undefined
@@ -211,7 +212,7 @@ export function StudioScene({ onStatus, onProgress, reduced, selectedFocus, lang
     resize(); addEventListener('resize', resize)
     const layoutObserver=new ResizeObserver(resize)
     const story=document.querySelector('.studio-story');if(story)layoutObserver.observe(story)
-    let frame = 0, last = 0, current = scrollY, focusBlend = 0,lastShadowSeat=Infinity,lastShadowTurn=Infinity
+    let frame = 0, last = 0, current = scrollY, focusBlend = 0,lastShadowSeat=Infinity,lastShadowTurn=Infinity,lastShadowTime=0
     const cv = new THREE.Vector3(), tv = new THREE.Vector3(), av = new THREE.Vector3(), bv = new THREE.Vector3(), head = new THREE.Vector3()
     const onScroll = () => { dirty = true; container.dataset.cameraSettled = 'false' }; addEventListener('scroll', onScroll, { passive: true })
     const animate = (time: number) => {
@@ -236,7 +237,7 @@ export function StudioScene({ onStatus, onProgress, reduced, selectedFocus, lang
       tv.fromArray(a.t).lerp(bv.fromArray(b.t), blend)
       const seat = THREE.MathUtils.lerp(a.seat, b.seat, blend)
       const turn=THREE.MathUtils.lerp(a.turn,b.turn,blend)
-      if(compact&&(Math.abs(seat-lastShadowSeat)>.015||Math.abs(turn-lastShadowTurn)>.02)){renderer.shadowMap.needsUpdate=true;lastShadowSeat=seat;lastShadowTurn=turn}
+      if(Math.abs(seat-lastShadowSeat)>.015||Math.abs(turn-lastShadowTurn)>.02||(!compact&&dogChanged&&time-lastShadowTime>100)){renderer.shadowMap.needsUpdate=true;lastShadowSeat=seat;lastShadowTurn=turn;lastShadowTime=time}
       const seated=THREE.MathUtils.clamp((-.15-seat)/.33,0,1)
       // The hoodie extends well behind its root. Keep the backrest behind that
       // surface while the chair rolls toward the desk with the sitting motion.
@@ -288,11 +289,11 @@ export function StudioScene({ onStatus, onProgress, reduced, selectedFocus, lang
       if(bokeh)bokeh.enabled = !small && !reduced && loaded && (index<3||bow>.02)
       for (let i = 0; i < galleryLights.length; i++) galleryLights[i].emissiveIntensity = selection.current === i ? .8 : .22
       const drawStart=performance.now()
-      if(composer)composer.render();else renderer.render(scene,camera)
+      if(composer&&bokeh?.enabled)composer.render();else renderer.render(scene,camera)
       drawFrames++;if(performance.now()-drawStart>24)slowFrames++
-      if(drawFrames>=45){if(slowFrames>20&&renderRatio>(compact?.75:1)){renderRatio=Math.max(compact?.75:1,renderRatio-.15);renderer.setPixelRatio(renderRatio);composer?.setPixelRatio(renderRatio);resize()}drawFrames=0;slowFrames=0}
+      if(drawFrames>=45){if(slowFrames>20&&renderRatio>(compact?.75:1)){renderRatio=Math.max(compact?.75:1,renderRatio-.15);renderer.setPixelRatio(renderRatio);composer?.setPixelRatio(renderRatio*.85);resize()}drawFrames=0;slowFrames=0}
       if(readyToReveal){readyToReveal=false;onStatus('ready')}
-      if(import.meta.env.DEV){container.dataset.renderProfile=JSON.stringify({compact,postprocessing:!!composer,pixelRatio:renderRatio,drawMs:performance.now()-drawStart,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,time})}
+      if(import.meta.env.DEV){container.dataset.renderProfile=JSON.stringify({compact,postprocessing:!!bokeh?.enabled,pixelRatio:renderRatio,drawMs:performance.now()-drawStart,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,time})}
       container.dataset.cameraSettled = String(current === scrollY && focusBlend === goal)
       if (import.meta.env.DEV) container.dataset.cameraPose = JSON.stringify({ position: camera.position.toArray(), quaternion: camera.quaternion.toArray(), fov: camera.fov })
       if (import.meta.env.DEV && headLook){container.dataset.headPose=JSON.stringify(headLook.pose());container.dataset.headSettled=String(!headMoving&&!eyesMoving&&current===scrollY)}

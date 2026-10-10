@@ -8,9 +8,12 @@ import fs from 'node:fs/promises'
 await MeshoptEncoder.ready
 const io=new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({'meshopt.encoder':MeshoptEncoder,'meshopt.decoder':MeshoptDecoder})
 const report=[]
-for(const [name,resolution,quality] of [['scholar-mobile-v1',1024,88],['scholar-web-v1',2048,92]]){
+for(const [name,resolution,quality] of [['scholar-mobile-v1',1024,88],['scholar-web-v1',2048,92],['scholar-web-v2',2048,92]]){
   const doc=await io.read('public/models/scholar-head.glb')
-  await doc.transform(dedup(),reorder({encoder:MeshoptEncoder}),textureCompress({encoder:sharp,targetFormat:'webp',resize:[resolution,resolution],quality}))
+  await doc.transform(dedup(),reorder({encoder:MeshoptEncoder}))
+  if(name.endsWith('v2')){
+    await doc.transform(textureCompress({encoder:sharp,targetFormat:'webp',slots:/baseColorTexture/,resize:[2048,2048],quality:92}),textureCompress({encoder:sharp,targetFormat:'webp',slots:/normalTexture|metallicRoughnessTexture|occlusionTexture/,resize:[1024,1024],quality:88}))
+  }else await doc.transform(textureCompress({encoder:sharp,targetFormat:'webp',resize:[resolution,resolution],quality}))
   // Lossless vertex coding preserves face-repair coordinates and head skin weights.
   // Do not quantize or simplify the already retouched face.
   doc.createExtension(EXTMeshoptCompression).setRequired(true).setEncoderOptions({method:EXTMeshoptCompression.EncoderMethod.QUANTIZE})
