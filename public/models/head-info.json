@@ -1,0 +1,76 @@
+{
+  "status": "head-turn-original-surface",
+  "source": "scholar.glb",
+  "output": "scholar-head.glb",
+  "joints": [
+    {
+      "name": "Root",
+      "influencedVertices": 0
+    },
+    {
+      "name": "Hips",
+      "influencedVertices": 14543
+    },
+    {
+      "name": "Spine",
+      "influencedVertices": 21354
+    },
+    {
+      "name": "Chest",
+      "influencedVertices": 17410
+    },
+    {
+      "name": "Neck",
+      "influencedVertices": 12340
+    },
+    {
+      "name": "Head",
+      "influencedVertices": 61307
+    },
+    {
+      "name": "LeftShoulder",
+      "influencedVertices": 51
+    },
+    {
+      "name": "LeftUpperArm",
+      "influencedVertices": 2091
+    },
+    {
+      "name": "LeftForeArm",
+      "influencedVertices": 3694
+    },
+    {
+      "name": "LeftHand",
+      "influencedVertices": 2783
+    },
+    {
+      "name": "RightShoulder",
+      "influencedVertices": 43
+    },
+    {
+      "name": "RightUpperArm",
+      "influencedVertices": 1969
+    },
+    {
+      "name": "RightForeArm",
+      "influencedVertices": 3173
+    },
+    {
+      "name": "RightHand",
+      "influencedVertices": 2436
+    }
+  ],
+  "skins": 1,
+  "clips": [
+    "HeadTurn_Test",
+    "IdleUpperBody_Test"
+  ],
+  "sourceVertices": 104955,
+  "vertices": 104955,
+  "maxWeightError": 4.470348358154297e-8,
+  "independentEyes": false,
+  "originalEyes": true,
+  "eyeReport": null,
+  "bytes": 9604868,
+  "note": "Small head rotation, original body/face/eye geometry and textures; no independent eye or arm animation."
+}

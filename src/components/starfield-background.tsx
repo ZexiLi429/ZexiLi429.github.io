@@ -9,6 +9,7 @@ export function StarfieldBackground() {
     if (!container) {
       return
     }
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
 
     const scene = new THREE.Scene()
     const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000)
@@ -128,6 +129,10 @@ export function StarfieldBackground() {
     const clock = new THREE.Clock()
 
     const render = () => {
+      if (document.hidden || window.scrollY > window.innerHeight * .25) {
+        frameId = window.requestAnimationFrame(render)
+        return
+      }
       const elapsedTime = clock.getElapsedTime()
       pointerCurrent.lerp(pointerTarget, 0.035)
 

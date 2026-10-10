@@ -1,0 +1,110 @@
+{
+  "status": "gaze-enabled",
+  "source": "scholar.glb",
+  "output": "scholar-gaze.glb",
+  "joints": [
+    {
+      "name": "Root",
+      "influencedVertices": 0
+    },
+    {
+      "name": "Hips",
+      "influencedVertices": 14543
+    },
+    {
+      "name": "Spine",
+      "influencedVertices": 21354
+    },
+    {
+      "name": "Chest",
+      "influencedVertices": 17410
+    },
+    {
+      "name": "Neck",
+      "influencedVertices": 12340
+    },
+    {
+      "name": "Head",
+      "influencedVertices": 61307
+    },
+    {
+      "name": "LeftShoulder",
+      "influencedVertices": 51
+    },
+    {
+      "name": "LeftUpperArm",
+      "influencedVertices": 2091
+    },
+    {
+      "name": "LeftForeArm",
+      "influencedVertices": 3694
+    },
+    {
+      "name": "LeftHand",
+      "influencedVertices": 2783
+    },
+    {
+      "name": "RightShoulder",
+      "influencedVertices": 43
+    },
+    {
+      "name": "RightUpperArm",
+      "influencedVertices": 1969
+    },
+    {
+      "name": "RightForeArm",
+      "influencedVertices": 3173
+    },
+    {
+      "name": "RightHand",
+      "influencedVertices": 2436
+    },
+    {
+      "name": "RightEye",
+      "influencedVertices": 0
+    },
+    {
+      "name": "LeftEye",
+      "influencedVertices": 0
+    }
+  ],
+  "skins": 1,
+  "clips": [
+    "HeadTurn_Test",
+    "IdleUpperBody_Test",
+    "EyeLook_Test"
+  ],
+  "sourceVertices": 104955,
+  "vertices": 120507,
+  "maxWeightError": 4.470348358154297e-8,
+  "independentEyes": true,
+  "eyeReport": {
+    "eyes": [
+      {
+        "name": "RightEye",
+        "center": [
+          -0.087,
+          0.642,
+          0.184
+        ],
+        "rx": 0.027,
+        "ry": 0.007,
+        "slope": 0.19
+      },
+      {
+        "name": "LeftEye",
+        "center": [
+          0.048,
+          0.667,
+          0.184
+        ],
+        "rx": 0.028,
+        "ry": 0.0075,
+        "slope": 0.17
+      }
+    ],
+    "removedTriangles": 3560
+  },
+  "bytes": 10677684,
+  "note": "Original body exterior retained; rebuilt eyes with original iris texture. No arm animation."
+}

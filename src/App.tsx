@@ -3,6 +3,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 
 import { Button } from './components/ui/button'
 import { cn } from './lib/utils'
+import { StudioExperience } from './components/studio-experience'
 
 const StarfieldBackground = lazy(() =>
   import('./components/starfield-background').then((module) => ({
@@ -88,7 +89,8 @@ export default function App() {
   }, [])
 
   return (
-    <div className="relative min-h-[100svh] overflow-x-hidden bg-background text-foreground">
+    <>
+    <div id="home" className="hero-stage relative min-h-[100svh] bg-background text-foreground">
       <video
         ref={videoRef}
         autoPlay
@@ -116,7 +118,7 @@ export default function App() {
 
       <div className="absolute inset-0 z-[2] bg-[radial-gradient(ellipse_at_50%_-8%,rgba(196,232,255,0.14),transparent_34%),radial-gradient(ellipse_at_18%_10%,rgba(84,209,214,0.12),transparent_26%),radial-gradient(ellipse_at_82%_16%,rgba(160,214,255,0.1),transparent_24%),linear-gradient(180deg,rgba(2,6,23,0.14),rgba(2,6,23,0.54)_58%,rgba(2,6,23,0.36))]" />
 
-      <div className="relative z-10 flex min-h-[100svh] flex-col">
+      <div className="hero-sticky relative z-10 flex min-h-[100svh] flex-col">
         <header className="relative z-10 mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-4 px-4 pb-4 pt-5 sm:px-6 md:flex-nowrap md:px-8 md:py-6">
           <div className="flex min-w-0 items-center gap-3 sm:gap-4">
             <a
@@ -132,12 +134,10 @@ export default function App() {
             </a>
 
             <nav className="flex min-w-0 items-center gap-3 overflow-x-auto whitespace-nowrap md:hidden [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
-              {t.nav.map((item) => (
+              {t.nav.map((item, index) => (
                 <a
                   key={`${item}-mobile-inline`}
-                  href="https://github.com/ZexiLi429"
-                  target="_blank"
-                  rel="noreferrer"
+                  href={`#${['home', 'about', 'projects', 'music', 'resume'][index]}`}
                   className="shrink-0 text-sm text-muted-foreground transition-colors hover:text-foreground"
                 >
                   {item}
@@ -147,12 +147,10 @@ export default function App() {
           </div>
 
           <nav className="hidden items-center gap-8 md:flex">
-            {t.nav.map((item) => (
+            {t.nav.map((item, index) => (
               <a
                 key={item}
-                href="https://github.com/ZexiLi429"
-                target="_blank"
-                rel="noreferrer"
+                href={`#${['home', 'about', 'projects', 'music', 'resume'][index]}`}
                 className="text-sm text-muted-foreground transition-colors hover:text-foreground"
               >
                 {item}
@@ -179,7 +177,7 @@ export default function App() {
           </div>
         </header>
 
-        <main className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-start px-4 pb-14 pt-14 text-center sm:justify-center sm:px-6 sm:pb-20 sm:pt-14 md:px-8 md:pb-24 md:pt-16">
+        <main className="original-intro relative z-10 mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-start px-4 pb-14 pt-14 text-center sm:justify-center sm:px-6 sm:pb-20 sm:pt-14 md:px-8 md:pb-24 md:pt-16">
           <div className="liquid-glass animate-rise rounded-full px-4 py-2 text-[10px] uppercase tracking-[0.16em] text-muted-foreground sm:px-5 sm:text-xs sm:tracking-[0.24em]">
             {t.badge}
           </div>
@@ -208,7 +206,11 @@ export default function App() {
             </Button>
           </div>
         </main>
+        <div className="hello-bubble" aria-hidden="true">{isZh ? '大家好呀' : 'Hi there!'}<span>✦</span></div>
+        <a className="scroll-invitation" href="#about"><span>{isZh ? '向下滚动，来我的工作室坐坐' : 'Scroll into my studio'}</span><span aria-hidden="true">↓</span></a>
       </div>
     </div>
+    <StudioExperience lang={lang} onToggleLanguage={() => setLang(current => current === 'zh' ? 'en' : 'zh')} />
+    </>
   )
 }

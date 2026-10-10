@@ -5,3 +5,5 @@ dist/
 coverage/
 .vite/
 tsconfig.tsbuildinfo
+backup-original-*/
+preview-artifacts/
