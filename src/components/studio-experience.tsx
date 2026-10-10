@@ -89,6 +89,10 @@ export function StudioExperience({ lang, onToggleLanguage }: { lang: 'zh' | 'en'
   return <>
     <a className="skip-link" href="#about">{zh ? '跳到正文' : 'Skip to content'}</a>
     <div className={`studio-layer ${status === 'error' ? 'studio-fallback' : ''}`} data-model-status={status}>
+      <picture className={`studio-instant-preview ${status==='ready'?'is-ready':''}`} aria-hidden="true">
+        <source media="(max-width: 759px)" srcSet="/studio-preview-mobile-v1.webp" />
+        <img src="/studio-preview-desktop-v1.webp" alt="" fetchPriority="high" decoding="async" />
+      </picture>
       <Suspense fallback={null}><Scene onStatus={reportStatus} onProgress={reportProgress} reduced={reduced} selectedFocus={selection} lang={lang} onOpenExhibit={openExhibit} dailyDesk={dailyDesk} /></Suspense>
       <div className="studio-vignette" />
     </div>

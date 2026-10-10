@@ -40,18 +40,21 @@ export function StudioScene({ onStatus, onProgress, reduced, selectedFocus, lang
   useEffect(() => {
     if (!host.current) return
     const container = host.current
+    const compact=innerWidth<760
+    let renderRatio=Math.min(devicePixelRatio,compact?1:1.5),slowFrames=0,drawFrames=0
     let renderer: THREE.WebGLRenderer
-    try { renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' }) }
+    try { renderer = new THREE.WebGLRenderer({ antialias: !compact, powerPreference: 'high-performance' }) }
     catch { onStatus('error'); return }
-    renderer.setPixelRatio(Math.min(devicePixelRatio, innerWidth < 760 ? 1.25 : 1.5))
+    renderer.setPixelRatio(renderRatio)
     renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05
     renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap; renderer.localClippingEnabled = true
+    renderer.shadowMap.autoUpdate=!compact
     container.appendChild(renderer.domElement)
     const scene = new THREE.Scene(); scene.background = new THREE.Color('#0c1929'); scene.fog = new THREE.Fog('#0c1929', 11, 24)
     const camera = new THREE.PerspectiveCamera(38, 1, .08, 40)
     scene.add(new THREE.HemisphereLight('#b3d9ff', '#5e3523', 1.1))
     const key = new THREE.DirectionalLight('#ffdfb5', 3.8); key.position.set(-3, 4.5, 5); key.castShadow = true
-    key.shadow.mapSize.set(1024, 1024); Object.assign(key.shadow.camera, { left: -6, right: 6, top: 6, bottom: -6 }); key.shadow.normalBias = .025; scene.add(key)
+    key.shadow.mapSize.set(compact?512:1024, compact?512:1024); Object.assign(key.shadow.camera, { left: -6, right: 6, top: 6, bottom: -6 }); key.shadow.normalBias = .025; scene.add(key)
     const rim = new THREE.DirectionalLight('#75bfff', 3.2); rim.position.set(3, 4, -3); scene.add(rim)
     const fill = new THREE.DirectionalLight('#b3dfff', .7); fill.position.set(4, 2.8, 4); scene.add(fill)
     const lampLight = new THREE.PointLight('#ffbb69', 14, 6, 2); lampLight.position.set(-1.65, 1.9, .4); scene.add(lampLight)
@@ -158,12 +161,13 @@ export function StudioScene({ onStatus, onProgress, reduced, selectedFocus, lang
     for (let i = 0; i < 22; i++) box(.049, .025, .26, '#c6c7be', 1.88 + i * .062, 1.3, -1.75)
     for (const x of [1.9, 3.2]) box(.07, 1.1, .07, '#2b3d46', x, .55, -1.8)
     const dog=createStudioDog();scene.add(dog.root,createDogStep(),createDogDishes())
+    if(compact)dog.root.traverse(object=>{object.castShadow=false})
     petDog.current=(x,y)=>{if(x!==undefined&&y!==undefined){galleryRay.setFromCamera(new THREE.Vector2(x/innerWidth*2-1,1-y/innerHeight*2),camera);const object=galleryRay.intersectObjects(scene.children,true).find(h=>h.object instanceof THREE.Mesh)?.object;if(!object?.userData.dogPet){if(object?.userData.dailyDesk)window.open(DAILY_URL,'_blank','noopener,noreferrer');if(typeof object?.userData.exhibitIndex==='number')hotspots.current?.querySelectorAll('button')[object.userData.exhibitIndex]?.click();return false}}const result=dog.pet(camera.position);dirty=true;return result}
     type DogHost = HTMLDivElement & { previewDog?: (mode:DogPreview)=>void }
     if(import.meta.env.DEV)(container as DogHost).previewDog=mode=>{dog.preview(mode);dirty=true}
     const character = new THREE.Group(); scene.add(character)
     const waist = new THREE.Plane(new THREE.Vector3(0, 1, 0), -.7)
-    let disposed = false, loaded = false, dirty = true
+    let disposed = false, loaded = false, dirty = true,readyToReveal=false,shadersReady=false
     refreshScreen.current=()=>{drawDailyDesk(code,deskData.current);screenTexture.needsUpdate=true;dirty=true}
     highlightExhibit.current=index=>{galleryHints.forEach((hint,i)=>{hint.visible=index===i});dirty=true}
     let headLook: ReturnType<typeof createCharacterHead> | null = null
@@ -177,7 +181,8 @@ export function StudioScene({ onStatus, onProgress, reduced, selectedFocus, lang
       const bounds = new THREE.Box3().setFromObject(gltf.scene), size = bounds.getSize(new THREE.Vector3()), center = bounds.getCenter(new THREE.Vector3()), scale = 2.65 / size.y
       gltf.scene.scale.setScalar(scale); gltf.scene.position.set(-center.x * scale, -bounds.min.y * scale, -center.z * scale)
       gltf.scene.traverse(object => { if (object instanceof THREE.Mesh) { object.castShadow = true; object.receiveShadow = true; for (const material of Array.isArray(object.material) ? object.material : [object.material]) { material.clippingPlanes = [waist]; material.clipShadows = true; if (material instanceof THREE.MeshStandardMaterial) material.normalScale.set(.55, .55) } } })
-      character.add(gltf.scene); headLook=createCharacterHead(gltf.scene); microGaze=createSurfaceGaze(gltf.scene,microEnabled); loaded = true; dirty = true; onStatus('ready')
+      character.add(gltf.scene); headLook=createCharacterHead(gltf.scene); microGaze=createSurfaceGaze(gltf.scene,microEnabled); loaded = true; dirty = true; renderer.shadowMap.needsUpdate=true
+      void renderer.compileAsync(scene,camera).then(()=>{if(!disposed){shadersReady=true;readyToReveal=true;dirty=true}}).catch(()=>{if(!disposed){shadersReady=true;readyToReveal=true;dirty=true}})
     }, event=>{if(!disposed&&event.total>0)onProgress(Math.min(99,Math.round(event.loaded/event.total*100)))}, () => { if (!disposed) onStatus('error') })
     // Opening: upper-left portrait -> centred face close-up -> desk relationship.
     // Chapter transitions have zero velocity and acceleration at both ends.
@@ -192,12 +197,12 @@ export function StudioScene({ onStatus, onProgress, reduced, selectedFocus, lang
       { c: [2.8, 1.95, 3.5], t: [.65, 1.55, -.25], fov: 38, turn: .10, seat: -.48, arc: [.25, .35, -.5] },
     ]
     let keys: Key[] = []
-    const composerTarget=new THREE.WebGLRenderTarget(innerWidth,innerHeight,{type:THREE.HalfFloatType,samples:innerWidth<760?2:4})
-    const composer = new EffectComposer(renderer,composerTarget); composer.addPass(new RenderPass(scene, camera))
-    const bokeh = new BokehPass(scene, camera, { focus: 4, aperture: .0011, maxblur: .008 }); composer.addPass(bokeh); composer.addPass(new OutputPass())
-    const uniforms = bokeh.uniforms as Record<string, { value: number }>
+    const composer=compact?null:new EffectComposer(renderer,new THREE.WebGLRenderTarget(innerWidth,innerHeight,{type:THREE.HalfFloatType,samples:4}))
+    const bokeh=compact?null:new BokehPass(scene,camera,{focus:4,aperture:.0011,maxblur:.008})
+    if(composer&&bokeh){composer.addPass(new RenderPass(scene,camera));composer.addPass(bokeh);composer.addPass(new OutputPass())}
+    const uniforms = bokeh?.uniforms as Record<string, { value: number }> | undefined
     const resize = () => {
-      camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight)
+      camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); composer?.setSize(innerWidth, innerHeight)
       keys = [{ y: 0, shot: shots[0] }, { y: innerHeight * .12, shot: shots[1] }, { y: innerHeight * .38, shot: shots[2] }, { y: innerHeight * .8, shot: shots[3] }]
       let previous = shots[3]
       for (const [i, id] of ['about', 'projects', 'music', 'resume'].entries()) { const element = document.getElementById(id); const stop = (element ? element.getBoundingClientRect().top + scrollY : innerHeight * (i + 2)) - innerHeight * .1; keys.push({ y: stop - innerHeight * .68, shot: previous }, { y: stop, shot: shots[i + 4] }); previous = shots[i + 4] }
@@ -206,12 +211,12 @@ export function StudioScene({ onStatus, onProgress, reduced, selectedFocus, lang
     resize(); addEventListener('resize', resize)
     const layoutObserver=new ResizeObserver(resize)
     const story=document.querySelector('.studio-story');if(story)layoutObserver.observe(story)
-    let frame = 0, last = 0, current = scrollY, focusBlend = 0
+    let frame = 0, last = 0, current = scrollY, focusBlend = 0,lastShadowSeat=Infinity,lastShadowTurn=Infinity
     const cv = new THREE.Vector3(), tv = new THREE.Vector3(), av = new THREE.Vector3(), bv = new THREE.Vector3(), head = new THREE.Vector3()
     const onScroll = () => { dirty = true; container.dataset.cameraSettled = 'false' }; addEventListener('scroll', onScroll, { passive: true })
     const animate = (time: number) => {
       frame = requestAnimationFrame(animate)
-      if (document.hidden || time - last < 30) return
+      if (document.hidden || time - last < 15) return
       const dt = Math.min((time - last) / 1000, .2); last = time
       current = reduced ? scrollY : THREE.MathUtils.lerp(current, scrollY, 1 - Math.exp(-dt * 7)); if (Math.abs(current - scrollY) < .3) current = scrollY
       // Opening a scroll preserves the workstation composition and body contact.
@@ -219,7 +224,8 @@ export function StudioScene({ onStatus, onProgress, reduced, selectedFocus, lang
       focusBlend = reduced ? goal : THREE.MathUtils.lerp(focusBlend, goal, 1 - Math.exp(-dt * 5)); if (Math.abs(focusBlend - goal) < .001) focusBlend = goal
       const dogChanged=dog.update(dt,{active:current>innerHeight*.8&&selection.current===null,paused:dogPause.current,reduced})
       dirty=dogChanged||dirty
-      if (!dirty && current === scrollY && focusBlend === goal) return
+      if(current<1&&scrollY===0&&!readyToReveal){current=0;container.dataset.cameraSettled='true';return}
+      if ((!dirty && current === scrollY && focusBlend === goal)||!loaded||!shadersReady) return
       dirty = current !== scrollY || focusBlend !== goal
       let index = 0; while (index < keys.length - 2 && current > keys[index + 1].y) index++
       const a = keys[index].shot, b = keys[index + 1].shot, raw = THREE.MathUtils.clamp((current - keys[index].y) / (keys[index + 1].y - keys[index].y), 0, 1)
@@ -229,6 +235,8 @@ export function StudioScene({ onStatus, onProgress, reduced, selectedFocus, lang
       cv.x += arc[0] * bow; cv.y += arc[1] * bow; cv.z += arc[2] * bow
       tv.fromArray(a.t).lerp(bv.fromArray(b.t), blend)
       const seat = THREE.MathUtils.lerp(a.seat, b.seat, blend)
+      const turn=THREE.MathUtils.lerp(a.turn,b.turn,blend)
+      if(compact&&(Math.abs(seat-lastShadowSeat)>.015||Math.abs(turn-lastShadowTurn)>.02)){renderer.shadowMap.needsUpdate=true;lastShadowSeat=seat;lastShadowTurn=turn}
       const seated=THREE.MathUtils.clamp((-.15-seat)/.33,0,1)
       // The hoodie extends well behind its root. Keep the backrest behind that
       // surface while the chair rolls toward the desk with the sitting motion.
@@ -247,8 +255,8 @@ export function StudioScene({ onStatus, onProgress, reduced, selectedFocus, lang
       camera.position.copy(cv); camera.lookAt(tv); camera.updateProjectionMatrix()
       camera.updateMatrixWorld(); scene.updateMatrixWorld()
       if(dogTarget.current){
-        const bounds=new THREE.Box3().setFromObject(dog.root),points=[]
-        for(const x of [bounds.min.x,bounds.max.x])for(const y of [bounds.min.y,bounds.max.y])for(const z of [bounds.min.z,bounds.max.z])points.push(new THREE.Vector3(x,y,z).project(camera))
+        const points=[]
+        for(const x of [-.62,.60])for(const y of [0,.78])for(const z of [-.22,.22])points.push(dog.root.localToWorld(new THREE.Vector3(x,y,z)).project(camera))
         const xs=points.map(p=>(p.x+1)*innerWidth/2),ys=points.map(p=>(1-p.y)*innerHeight/2),left=Math.min(...xs),top=Math.min(...ys),width=Math.max(...xs)-left,height=Math.max(...ys)-top
         dogTarget.current.hidden=!(current>innerHeight*.8&&selection.current===null&&points.every(p=>p.z>-1&&p.z<1)&&left+width>0&&left<innerWidth&&top+height>85&&top<innerHeight)
         Object.assign(dogTarget.current.style,{left:left+'px',top:top+'px',width:width+'px',height:height+'px'})
@@ -276,10 +284,15 @@ export function StudioScene({ onStatus, onProgress, reduced, selectedFocus, lang
       let eyesMoving=false
       dirty=headMoving||dirty
       if(microGaze){if(reduced)microGaze.reset();else{eyesMoving=microGaze.update(camera.position,dt);dirty=eyesMoving||dirty}}
-      uniforms.focus.value = head.clone().sub(cv).dot(camera.getWorldDirection(av)); uniforms.aperture.value = .0011 + bow * .0002
-      bokeh.enabled = !small && !reduced && loaded && (index<3||bow>.02)
+      if(uniforms) {uniforms.focus.value = head.clone().sub(cv).dot(camera.getWorldDirection(av)); uniforms.aperture.value = .0011 + bow * .0002}
+      if(bokeh)bokeh.enabled = !small && !reduced && loaded && (index<3||bow>.02)
       for (let i = 0; i < galleryLights.length; i++) galleryLights[i].emissiveIntensity = selection.current === i ? .8 : .22
-      composer.render()
+      const drawStart=performance.now()
+      if(composer)composer.render();else renderer.render(scene,camera)
+      drawFrames++;if(performance.now()-drawStart>24)slowFrames++
+      if(drawFrames>=45){if(slowFrames>20&&renderRatio>(compact?.75:1)){renderRatio=Math.max(compact?.75:1,renderRatio-.15);renderer.setPixelRatio(renderRatio);composer?.setPixelRatio(renderRatio);resize()}drawFrames=0;slowFrames=0}
+      if(readyToReveal){readyToReveal=false;onStatus('ready')}
+      if(import.meta.env.DEV){container.dataset.renderProfile=JSON.stringify({compact,postprocessing:!!composer,pixelRatio:renderRatio,drawMs:performance.now()-drawStart,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,time})}
       container.dataset.cameraSettled = String(current === scrollY && focusBlend === goal)
       if (import.meta.env.DEV) container.dataset.cameraPose = JSON.stringify({ position: camera.position.toArray(), quaternion: camera.quaternion.toArray(), fov: camera.fov })
       if (import.meta.env.DEV && headLook){container.dataset.headPose=JSON.stringify(headLook.pose());container.dataset.headSettled=String(!headMoving&&!eyesMoving&&current===scrollY)}
@@ -287,9 +300,9 @@ export function StudioScene({ onStatus, onProgress, reduced, selectedFocus, lang
       if (import.meta.env.DEV) container.dataset.dogState=JSON.stringify(dog.inspect())
     }
     frame = requestAnimationFrame(animate)
-    const wake = setInterval(() => { dirty = true }, 500)
+    const wake = setInterval(() => {if(scrollY>0) dirty = true }, 500)
     const lost = (event: Event) => { event.preventDefault(); onStatus('error') }; renderer.domElement.addEventListener('webglcontextlost', lost)
-    return () => { disposed = true;delete (container as DogHost).previewDog;layoutObserver.disconnect(); petDog.current=null;pickComputer.current=null;refreshScreen.current=null;pickExhibit.current=null;highlightExhibit.current=null;cancelAnimationFrame(frame); clearInterval(wake); removeEventListener('resize', resize); removeEventListener('scroll', onScroll); renderer.domElement.removeEventListener('webglcontextlost', lost); disposeObject(scene); composer.passes.forEach(pass => pass.dispose()); composer.dispose(); renderer.dispose(); renderer.domElement.remove() }
+    return () => { disposed = true;delete (container as DogHost).previewDog;layoutObserver.disconnect(); petDog.current=null;pickComputer.current=null;refreshScreen.current=null;pickExhibit.current=null;highlightExhibit.current=null;cancelAnimationFrame(frame); clearInterval(wake); removeEventListener('resize', resize); removeEventListener('scroll', onScroll); renderer.domElement.removeEventListener('webglcontextlost', lost); disposeObject(scene); composer?.passes.forEach(pass => pass.dispose()); composer?.dispose(); renderer.dispose(); renderer.domElement.remove() }
   }, [onStatus, reduced])
   return <><button ref={dogTarget} hidden type="button" className="dog-pet-target" aria-label={lang==='zh'?'摸摸嘻嘻':'Pet Xixi'} onClick={event=>{if(petDog.current?.(event.detail===0?undefined:event.clientX,event.detail===0?undefined:event.clientY))setPetFeedback(true)}}><span>{lang==='zh'?'摸摸嘻嘻':'Pet Xixi'}</span></button><div className="dog-pet-feedback" role="status" aria-live="polite">{petFeedback?(lang==='zh'?'嘻嘻：喜欢你摸摸我 ♡':'Xixi loves your pats ♡'):''}</div><div className="studio-canvas" ref={host} aria-hidden="true" /><button type="button" className="dog-rest-toggle" disabled={reduced} aria-pressed={dogPaused||reduced} onClick={()=>setDogPaused(value=>!value)} aria-label={lang==='zh'?(reduced?'减少动画已开启，嘻嘻安静陪伴':dogPaused?'让嘻嘻继续活动':'让嘻嘻趴下休息，暂停狗狗动画'):(dogPaused?'Let Xixi wander':'Let Xixi rest; pause dog animation')}><span aria-hidden="true">🐾</span><span>{lang==='zh'?'嘻嘻':'XIXI'}<small>{reduced?(lang==='zh'?'安静陪伴':'quiet company'):dogPaused?(lang==='zh'?'继续活动':'let’s wander'):(lang==='zh'?'休息一下':'take a rest')}</small></span></button><a ref={computerLink} hidden className="computer-hotspot" href={DAILY_URL} target="_blank" rel="noopener noreferrer" aria-label={lang==='zh'?'点击电脑，打开 AIHOT 日报（新标签页）':'Open AIHOT daily in a new tab'} onClick={event=>{if(event.detail!==0&&!pickComputer.current?.(event.clientX,event.clientY))event.preventDefault()}}><span>{lang==='zh'?'AIHOT · 打开日报 ↗':'AIHOT · Daily briefing ↗'}</span></a><div className="gallery-hotspots" ref={hotspots}>{exhibits.map((exhibit,i)=><button key={exhibit.id} hidden type="button" data-exhibit={exhibit.id} onPointerEnter={()=>highlightExhibit.current?.(i)} onPointerLeave={()=>highlightExhibit.current?.(null)} onFocus={()=>highlightExhibit.current?.(i)} onBlur={()=>highlightExhibit.current?.(null)} onClick={event=>{if(event.detail===0||pickExhibit.current?.(event.clientX,event.clientY)===i){highlightExhibit.current?.(null);onOpenExhibit(i)}}} aria-haspopup="dialog" aria-label={lang==='zh'?`打开${exhibit.name}展区`:`Open ${exhibit.en} exhibit`}/>)}</div></>
 }

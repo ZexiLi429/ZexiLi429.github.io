@@ -270,6 +270,10 @@ body:has(dialog[open]) { overflow-y: hidden; }
 /* Blue hour: the sky, portrait and workspace belong to the same world. */
 :root { --scene-opacity: 0; --intro-opacity: 1; --greeting-opacity: 0; }
 .studio-layer { background: #0c1929; opacity: var(--scene-opacity); }
+.studio-instant-preview{position:absolute;inset:0;z-index:1;pointer-events:none;opacity:1;transition:opacity .45s ease}
+.studio-instant-preview img{width:100%;height:100%;object-fit:cover}
+.studio-instant-preview.is-ready{opacity:0}
+@media(prefers-reduced-motion:reduce){.studio-instant-preview{transition:none}}
 .studio-vignette { background: radial-gradient(ellipse at 45% 40%, transparent 36%, #07121d7a 100%), linear-gradient(0deg, #06131b55, transparent 25%); }
 .studio-fallback { background: radial-gradient(ellipse at 30% 35%, #244760, transparent 60%), #0c1929; }
 .original-intro { opacity: var(--intro-opacity); }
